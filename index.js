@@ -1,3 +1,4 @@
+const fs = require("fs");
 const { 
     createConnection, 
     getCollections, 
@@ -6,18 +7,19 @@ const {
 
 const source = {
     url: "mongodb://localhost:27018",
-    name: "adp-dev" 
+    name: "adp-dev"
 }
 
 const dest = {
     url: "mongodb://localhost:27017",
-    name: "adp-dev"
+    name: "adp-dev",
+    sslCA: fs.readFileSync("rds-combined-ca-bundle.pem")
 }
 
 const run = async () => {
     try {
         const sourceDb = await createConnection(source.url, source.name);
-        const destDb = await createConnection(dest.url, dest.name);
+        const destDb = await createConnection(dest.url, dest.name, dest.sslCA);
     
         const sourceCollections = await getCollections(sourceDb);
     

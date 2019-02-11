@@ -1,15 +1,26 @@
 
 const { MongoClient } = require('mongodb');
 
-const createConnection = (url, dbName) => {
+const createConnection = (url, dbName, sslCA = false ) => {
+    let options = {
+        useNewUrlParser: true, 
+        socketTimeoutMS: 0,
+        keepAlive: true,
+        reconnectTries: 30,
+        poolSize: 20
+    }
+
+    if (sslCA) {
+        options = {
+            ...options,
+            ssl: true,
+            sslValidate: false,
+            sslCA
+        }
+    }
+    
     return new Promise((resolve, reject) => {
-        MongoClient.connect(url, { 
-            useNewUrlParser: true, 
-            socketTimeoutMS: 0,
-            keepAlive: true,
-            reconnectTries: 30,
-            poolSize: 20, 
-        }, (err, client) => {
+        MongoClient.connect(url, options, (err, client) => {
             if (err) reject(err);
             console.log(`Connected successfully to server: ${url}`);
             resolve(client.db(dbName));
@@ -62,7 +73,7 @@ const syncCollection = async (sourceDb, destDb, collection) => {
     const filters = (destLatestDocument.length) ? { createdAt: { $gt: destLatestDocument[0].createdAt } } : {};
     const newData = await findDocuments(sourceDb, collection, filters);
     if (newData.length) {
-        const result = await insertDocuments(destDb, collection, newData);
+        await insertDocuments(destDb, collection, newData);
         console.log(`Collection: ${collection}, added ${newData.length} documents`);
     } else {
         console.log(`Collection: ${collection}, new documents not found`);
